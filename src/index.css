@@ -1,0 +1,37 @@
+/* .select2-container {
+
+}
+
+.woocommerce-page .select2-container .select2-selection:focus{
+    background-color: #fff;
+    box-shadow: 0 0 0 1px #50575e;
+    color: #2b2d2f;
+    outline: 0;
+}
+
+.woocommerce-page .select2-container .select2-selection{
+    display: block;
+    height: max-content;
+    background-color: #fff;
+    border: 1px solid hsla(0, 0%, 7%, .8);
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: #2b2d2f;
+    font-family: inherit;
+    font-size: 1em;
+    height: 50px;
+    line-height: 1em;
+    margin: 0;
+    min-height: 0;
+    padding: 1em .5em;
+    width: 100%;
+}
+
+.select2-container--open{
+    background-color: #fff;
+    border: 1px solid hsla(0, 0%, 7%, .8);
+}
+
+.select2-dropdown{
+    padding: 0;
+} */
