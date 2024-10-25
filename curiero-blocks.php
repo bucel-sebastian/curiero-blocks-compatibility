@@ -5,6 +5,7 @@
  * Description: Extends WooCommerce blocks checkout to update shipping package display
  * Version: 1.0.0
  * Author: Your Name
+ * Requires Plugins: woocommerce
  */
 
 if (!defined('ABSPATH')) {
@@ -47,19 +48,19 @@ class WC_Blocks_Shipping_Extension
             wp_enqueue_script('select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], null, true);
             wp_enqueue_script('wc-blocks-shipping-extension', ['jquery', 'select2'], null, true);
 
+            if(class_exists('Sameday_Shipping_Method')){
+                $SamedayShippingMethod = new CurieRO_Internal_Sameday_Request();
+                $lockers_list = $SamedayShippingMethod->getLockers();
+                // dd($lockers_list);
+
+            }
+
             wp_localize_script('select2', 'curieroBlocks', [
                 "sameday" => [
-                    "lockers" => [
-                        ["key" => "001", "value" => "Locker 1"],
-                        ["key" => "002", "value" => "Locker 2"],
-                        ["key" => "003", "value" => "Locker 3"],
-                        ["key" => "004", "value" => "Locker 4"],
-                        ["key" => "005", "value" => "Locker 5"],
-                        ["key" => "006", "value" => "Locker 6"],
-                        ["key" => "007", "value" => "Locker 7"]
-                    ],
+                    "lockers" => $lockers_list,
                     "lockersMap" => true
                 ],
+                'ajaxurl'=>admin_url('admin-ajax.php')
          
             ]);
         }
@@ -71,9 +72,24 @@ new WC_Blocks_Shipping_Extension();
 
 
 
-// register_block_type('woocommerce/checkout-shipping-address-block', array(
-//     'render_callback' => 'my_test_function',
-// ));
-// function my_test_function( $attributes, $content ) {
-//     return '<h1>Block nou</h1>';
-// }
+add_action('woocommerce_blocks_loaded', function() {
+    woocommerce_store_api_register_update_callback(
+      [
+        'namespace' => 'curiero-blocks-namespace',
+        'callback'  => function($data)  {
+            if (isset($data['order_id']) && isset($data['locker'])) {
+                $order_id = intval($data['order_id']);
+                $shipping_address = sanitize_text_field($data['locker']);
+
+                // Actualizează adresa de expediere
+                update_post_meta($order_id, '_shipping_address_1', $shipping_address);
+
+                error_log(" {$order_id} - {$shipping_address} ");
+
+            } else {
+       
+            }
+        }
+      ]
+    );
+  } );

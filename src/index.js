@@ -3,10 +3,9 @@ import { useSelect } from "@wordpress/data";
 import { useState, useEffect } from "@wordpress/element";
 import LockersComponent from "./LockersComponent";
 
-import {registerCheckoutFilters} from "@wordpress/blocks-checkout"
+import { registerCheckoutFilters } from "@wordpress/blocks-checkout";
 
 import "./index.css";
-
 
 const lockers_id = ["curiero_sameday_lockers"];
 
@@ -47,12 +46,6 @@ const CurieROShippingLockers = () => {
   );
 };
 
-
-
-
-
-
-
 const render = () => {
   const { ExperimentalOrderShippingPackages } =
     window?.wc?.blocksCheckout || {};
@@ -90,41 +83,41 @@ const render = () => {
 //   }
 // });
 
-const renderCityField = ({ field, onChange }) => {
-  // Get cities from localized data
-  const cities = ["1",'2','3'];
-  
-  return (
-      <select
-          id={field.id}
-          className="wc-block-components-select-control__input"
-          value={field.value}
-          onChange={(e) => onChange(e.target.value)}
-          required={field.required}
-      >
-          <option value="">{`Select a city...`}</option>
-          {cities.map((city) => (
-              <option key={city} value={city}>
-                  {city}
-              </option>
-          ))}
-      </select>
-  );
-};
+// const renderCityField = ({ field, onChange }) => {
+//   // Get cities from localized data
+//   const cities = ["1",'2','3'];
 
-// Register the checkout filter
-registerCheckoutFilters('city-select-plugin', {
-  billing: {
-      city: {
-          render: renderCityField,
-      },
-  },
-  shipping: {
-      city: {
-          render: renderCityField,
-      },
-  },
-});
+//   return (
+//       <select
+//           id={field.id}
+//           className="wc-block-components-select-control__input"
+//           value={field.value}
+//           onChange={(e) => onChange(e.target.value)}
+//           required={field.required}
+//       >
+//           <option value="">{`Select a city...`}</option>
+//           {cities.map((city) => (
+//               <option key={city} value={city}>
+//                   {city}
+//               </option>
+//           ))}
+//       </select>
+//   );
+// };
+
+// // Register the checkout filter
+// registerCheckoutFilters('city-select-plugin', {
+//   billing: {
+//       city: {
+//           render: renderCityField,
+//       },
+//   },
+//   shipping: {
+//       city: {
+//           render: renderCityField,
+//       },
+//   },
+// });
 
 registerPlugin("curiero-blocks", {
   render,
