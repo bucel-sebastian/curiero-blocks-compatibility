@@ -9,6 +9,14 @@ const render = () => {
   const { ExperimentalOrderShippingPackages } =
     window?.wc?.blocksCheckout || {};
 
+  // console.log(window.wc);
+  // console.log(window.wc.checkout);
+  // console.log(window.wc.blocksCheckout);
+  // console.log(window.wc.wcBlocksSharedContext);
+  // console.log(window.wc.wcBlocksSharedContext.useInnerBlockLayoutContext());
+  // console.log(
+  //   window.wc.wcBlocksSharedContext.InnerBlockLayoutContextProvider()
+  // );
   // If the component isn't available, render nothing
   if (!ExperimentalOrderShippingPackages) {
     console.warn("ExperimentalOrderShippingPackages not available");
@@ -68,17 +76,3 @@ registerPlugin("curiero-blocks", {
 //       </select>
 //   );
 // };
-
-// // Register the checkout filter
-// registerCheckoutFilters('city-select-plugin', {
-//   billing: {
-//       city: {
-//           render: renderCityField,
-//       },
-//   },
-//   shipping: {
-//       city: {
-//           render: renderCityField,
-//       },
-//   },
-// });

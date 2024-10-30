@@ -28,6 +28,7 @@ class WC_Blocks_Shipping_Extension
     public function __construct()
     {
         add_action('init', [$this, 'register_scripts']);
+        add_action('woocommerce_init', [$this, 'register_additional_checkout_fields']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
         add_action('woocommerce_blocks_loaded', [$this, 'curiero_blocks_loaded']);
@@ -83,6 +84,32 @@ class WC_Blocks_Shipping_Extension
             ]);
         }
     }
+
+    public function register_additional_checkout_fields(): void
+    {
+        woocommerce_register_additional_checkout_field(
+            array(
+                'id'       => 'CurieRO/city',
+                'label'    => __('Localitate', 'curiero-plugin'),
+                'location' => 'address',
+                'type'     => 'select',
+                'placeholder' => __('Selecteaza localitatea', 'curiero-plugin'),
+                'options'  => array(
+                    ['value' => '', 'label' => '']
+                    // array('value' => 'Constanta', 'label' => 'Constanta'),
+
+                    // Add more options as needed
+                ),
+                'required' => true,
+                'attributes' => array(
+                    // 'autocomplete' => 'government-id',
+                    // 'pattern'      => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
+                    // 'title'        => 'Your 5-digit Government ID',
+                ),
+            )
+        );
+    }
+
 
     /**
      * Add data in Store API 
@@ -296,3 +323,73 @@ class WC_Blocks_Shipping_Extension
 
 
 new WC_Blocks_Shipping_Extension();
+
+
+add_filter('render_block_data', 'reorder_checkout_fields', 10, 3);
+
+function reorder_checkout_fields($block_data, $block, $content)
+{
+
+
+    // error_log($block['blockName']);
+
+    if ($block['blockName'] === 'woocommerce/checkout-shipping-address-block') {
+        // error_log('');
+        // error_log(' ' . json_encode($block));
+        // error_log('');
+        // error_log('Attrs ' . json_encode($block_data['attrs']));
+        // error_log('');
+        // error_log(' ' . json_encode($content));
+
+        // error_log('');
+        // error_log('');
+        // error_log('');
+    }
+    // Check if this is the WooCommerce Checkout Fields block
+    // if ($block['blockName'] === 'woocommerce/checkout-fields') {
+    //     // Get the current field order
+    //     $fields = $block_data['attrs']['fields'];
+
+    //     // Reorder the shipping fields
+    //     $shipping_fields = $fields['shipping'];
+    //     $new_order = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country'];
+    //     $shipping_fields = array_merge(array_flip($new_order), $shipping_fields);
+    //     $fields['shipping'] = $shipping_fields;
+
+    //     // Update the block data with the modified fields
+    //     $block_data['attrs']['fields'] = $fields;
+    // }
+
+    return $block_data;
+}
+
+
+
+add_filter(
+    'woocommerce_get_country_locale',
+    function ($locale) {
+
+
+        $locale['RO'] = wp_parse_args(
+            array(
+                'state'      => [
+                    'priority' => 50
+                ],
+                'city'       => [
+                    // 'priority' => 60,
+                    // 'type' => 'city',
+                    'hidden'   => 'true',
+                    'required' => 'false',
+                ],
+                'CurieRO/city' => [
+                    'priority' => 60,
+                    'required' => 'true',
+                ]
+
+            ),
+            $locale['RO'],
+        );
+        error_log(json_encode($locale['RO']));
+        return $locale;
+    }
+);
