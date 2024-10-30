@@ -32,6 +32,9 @@ class WC_Blocks_Shipping_Extension
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
         add_action('woocommerce_blocks_loaded', [$this, 'curiero_blocks_loaded']);
         add_action('woocommerce_store_api_checkout_update_order_meta', [$this, 'curiero_blocks_store_api_checkout_update_order_meta']);
+
+        add_action('wp_ajax_curiero_get_lockers', array($this, 'handle_get_lockers'));
+        add_action('wp_ajax_nopriv_curiero_get_lockers', array($this, 'handle_get_lockers'));
     }
 
     public function register_scripts()
@@ -74,7 +77,8 @@ class WC_Blocks_Shipping_Extension
                         'sameday' => __('Arata Harta Easybox', 'curiero-plugin')
                     ]
                 ],
-                'ajaxurl' => admin_url('admin-ajax.php')
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('curiero_blocks_ajax_nonce')
 
             ]);
         }
@@ -103,11 +107,17 @@ class WC_Blocks_Shipping_Extension
     public function CurieRO_blocks_schema_callback(): array
     {
         return [
-            'custom-key' => [
-                'description' => 'CurieRO Namespace',
-                'type' => 'string',
-                'readonly' => true,
-            ]
+            'samedayLockers' => array(
+                'description' => 'Available lockers',
+                'type' => 'array',
+                'items' => array(
+                    'type' => 'object'
+                )
+            ),
+            'samedaySelectedLocker' => array(
+                'description' => 'Currently selected locker',
+                'type' => 'object'
+            )
         ];
     }
 
@@ -135,24 +145,43 @@ class WC_Blocks_Shipping_Extension
 
                     if (isset($data['action'])) {
 
-                        if ($data['action'] === 'sameday-get-lockers') {
-                            if (class_exists('Sameday_Shipping_Method')) {
-                                $shipping_city = WC()->session->get('customer')['shipping_city'];
-                                $shipping_county = WC()->session->get('customer')['shipping_state'];
-                                $shipping_country = WC()->session->get('customer')['shipping_country'];
-
-                                $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
-                                $lockers_list = $shipping_method->get_easybox_list($shipping_county, $shipping_city, $shipping_country);
-
-                                error_log("Lockers list array " . json_encode(array_values($lockers_list->toArray())));
+                        // if ($data['action'] === 'sameday-get-lockers') {
 
 
-                                WC()->session->set(
-                                    'curiero_blocks_sameday_lockers',
-                                    array_values($lockers_list->toArray())
-                                );
-                            }
-                        }
+
+                        //     if (class_exists('Sameday_Shipping_Method')) {
+                        //         $shipping_city = $data['city'];
+                        //         $shipping_county = $data['state'];
+                        //         $shipping_country = $data['country'] || "RO";
+
+                        //         // Update the session data first
+                        //         $customer = WC()->session->get('customer');
+                        //         $customer['shipping_state'] = $shipping_county;
+                        //         WC()->session->set('customer', $customer);
+
+                        //         // Get the shipping method
+                        //         $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
+
+                        //         // Get current shipping details from session
+                        //         $shipping_city = WC()->session->get('customer')['shipping_city'];
+                        //         $shipping_country = WC()->session->get('customer')['shipping_country'];
+
+                        //         $customer = WC()->session->get('customer');
+                        //         $customer['shipping_state'] = $shipping_county;
+                        //         WC()->session->set('customer', $customer);
+
+                        //         $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
+                        //         $lockers_list = $shipping_method->get_easybox_list($shipping_county, $shipping_city, $shipping_country);
+
+                        //         // error_log("Lockers list array " . json_encode(array_values($lockers_list->toArray())));
+
+
+                        //         WC()->session->set(
+                        //             'curiero_blocks_sameday_lockers',
+                        //             array_values($lockers_list->toArray())
+                        //         );
+                        //     }
+                        // }
 
                         if ($data['action'] === 'sameday-set-selected-locker') {
                             if (!isset($data['order_id']) || !isset($data['locker'])) {
@@ -173,7 +202,7 @@ class WC_Blocks_Shipping_Extension
                                     ['status' => 400]
                                 );
                             }
-                            error_log("Set selected locker - " . json_encode($locker_data));
+                            // error_log("Set selected locker - " . json_encode($locker_data));
 
                             WC()->session->set('curiero_sameday_selected_locker', $locker_data);
                         }
@@ -184,6 +213,60 @@ class WC_Blocks_Shipping_Extension
         );
     }
 
+
+    function handle_get_lockers()
+    {
+        try {
+
+            if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'curiero_blocks_ajax_nonce')) {
+                throw new Exception(__('Security check failed', 'curiero-plugin'));
+            }
+
+
+            if (class_exists('Sameday_Shipping_Method')) {
+                $shipping_city = $_POST['city'];
+                $shipping_county = $_POST['state'];
+                // $shipping_country = $_POST['country'] || "RO";
+
+
+                error_log($shipping_city . " - " . $shipping_county . " - ");
+                // Update the session data first
+                // $customer = WC()->session->get('customer');
+                // $customer['shipping_state'] = $shipping_county;
+                // WC()->session->set('customer', $customer);
+
+                // Get the shipping method
+                $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
+
+                // Get current shipping details from session
+                // $shipping_city = WC()->session->get('customer')['shipping_city'];
+                // $shipping_country = WC()->session->get('customer')['shipping_country'];
+
+                $customer = WC()->session->get('customer');
+                $customer['shipping_state'] = $shipping_county;
+                WC()->session->set('customer', $customer);
+
+                $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
+                $lockers_list = $shipping_method->get_easybox_list($shipping_county, $shipping_city);
+
+                // error_log("Lockers list array " . json_encode(array_values($lockers_list->toArray())));
+
+
+                WC()->session->set(
+                    'curiero_blocks_sameday_lockers',
+                    array_values($lockers_list->toArray())
+                );
+
+                wp_send_json_success([
+                    'lockers' => array_values($lockers_list->toArray())
+                ]);
+            }
+        } catch (Exception $e) {
+            wp_send_json_error([
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 
     /**
      * @param WC_Order $order

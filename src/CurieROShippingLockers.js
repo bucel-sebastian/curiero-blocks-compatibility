@@ -7,23 +7,40 @@ const lockers_id = ["curiero_sameday_lockers"];
 
 function CurieROShippingLockers() {
   const [selectedShippingRate, setSelectedShippingRate] = useState(null);
-  const shippingRate = useSelect((select) => {
+
+  const storeCheckoutOrderId = useSelect((select) => {
+    const store = select("wc/store/checkout");
+
+    return store.getOrderId();
+  }, []);
+  const storeCartShippingRates = useSelect((select) => {
     const store = select("wc/store/cart");
-    const shippingData = store.getShippingRates();
-    const shippingRates = shippingData[0]?.shipping_rates || [];
 
-    const selectedRate = shippingRates.find((rate) => rate.selected === true);
+    return store.getShippingRates();
+  }, []);
+  const storeCartData = useSelect((select) => {
+    const store = select("wc/store/cart");
 
-    return selectedRate || null;
+    return store.getCartData();
+  }, []);
+  const storeCart = useSelect((select) => {
+    const store = select("wc/store/cart");
+
+    return store;
   }, []);
 
   useEffect(() => {
-    if (shippingRate && lockers_id.includes(shippingRate.rate_id)) {
-      setSelectedShippingRate(`${shippingRate.rate_id}`);
-    } else {
-      setSelectedShippingRate(null);
-    }
-  }, [shippingRate]);
+    // console.log(storeCartShippingRates, storeCheckoutOrderId, storeCartData);
+  }, [storeCartShippingRates, storeCheckoutOrderId, storeCartData]);
+
+  useEffect(() => {
+    const shippingRates = storeCartShippingRates[0]?.shipping_rates || [];
+    const newSelectedShippingRate = shippingRates.find(
+      (rate) => rate.selected === true
+    );
+
+    setSelectedShippingRate(newSelectedShippingRate);
+  }, [storeCartShippingRates]);
 
   return (
     <>
@@ -31,7 +48,13 @@ function CurieROShippingLockers() {
         <>
           <div className="wc-block-components-shipping-rates-control">
             <div className="shipping-method-content">
-              <LockersComponent rateId={selectedShippingRate} />
+              <LockersComponent
+                rateId={selectedShippingRate?.rate_id}
+                orderId={storeCheckoutOrderId}
+                cartData={storeCartData}
+                shippingRates={storeCartShippingRates}
+                // storeCart={storeCart}
+              />
             </div>
           </div>
         </>
