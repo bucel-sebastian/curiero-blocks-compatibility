@@ -69,12 +69,12 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
   useEffect(() => {
     setLockersAreLoading(true);
     getLockers(
-      cartData.shippingAddress.city,
+      cartData.shippingAddress.CurieRO_city,
       cartData.shippingAddress.state,
       cartData.shippingAddress.country
     );
   }, [
-    cartData.shippingAddress.city,
+    cartData.shippingAddress.CurieRO_city,
     cartData.shippingAddress.state,
     cartData.shippingAddress.country,
   ]);

@@ -15,8 +15,7 @@ use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CheckoutSchema;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartSchema;
 
-
-
+use function PHPSTORM_META\type;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -34,8 +33,16 @@ class WC_Blocks_Shipping_Extension
         add_action('woocommerce_blocks_loaded', [$this, 'curiero_blocks_loaded']);
         add_action('woocommerce_store_api_checkout_update_order_meta', [$this, 'curiero_blocks_store_api_checkout_update_order_meta']);
 
-        add_action('wp_ajax_curiero_get_lockers', array($this, 'handle_get_lockers'));
-        add_action('wp_ajax_nopriv_curiero_get_lockers', array($this, 'handle_get_lockers'));
+        add_filter('woocommerce_get_country_locale', [$this, 'curiero_blocks_change_checkout_fields']);
+
+        add_action('wp_ajax_curiero_set_shipping_city', [$this, 'handle_set_shipping_city']);
+        add_action('wp_ajax_nopriv_curiero_set_shipping_city', [$this, 'handle_set_shipping_city']);
+
+        add_action('wp_ajax_curiero_get_cities_by_state', [$this, 'handle_get_cities_by_state']);
+        add_action('wp_ajax_nopriv_curiero_get_cities_by_state', [$this, 'handle_get_cities_by_state']);
+
+        add_action('wp_ajax_curiero_get_lockers', [$this, 'handle_get_lockers']);
+        add_action('wp_ajax_nopriv_curiero_get_lockers', [$this, 'handle_get_lockers']);
     }
 
     public function register_scripts()
@@ -70,6 +77,7 @@ class WC_Blocks_Shipping_Extension
                     'selectedLocker' => WC()->session->get('curiero_sameday_selected_locker')
                 ],
                 'i18n' => [
+                    'citySelectDefault' => 'Selecteaza localitatea',
                     'selectLockerTitle' => [
                         'sameday' => __('Alege punct EasyBox', 'curiero-plugin'),
                     ],
@@ -96,19 +104,39 @@ class WC_Blocks_Shipping_Extension
                 'placeholder' => __('Selecteaza localitatea', 'curiero-plugin'),
                 'options'  => array(
                     ['value' => '', 'label' => '']
-                    // array('value' => 'Constanta', 'label' => 'Constanta'),
-
-                    // Add more options as needed
                 ),
                 'required' => true,
-                'attributes' => array(
-                    // 'autocomplete' => 'government-id',
-                    // 'pattern'      => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
-                    // 'title'        => 'Your 5-digit Government ID',
-                ),
             )
         );
     }
+
+
+    public function curiero_blocks_change_checkout_fields($locale): array
+    {
+        $locale['RO'] = wp_parse_args(
+            array(
+                'state'      => [
+                    'priority' => 50
+                ],
+                'city'       => [
+                    'priority' => 65,
+                    'type' => 'select',
+                    'hidden'   => false,
+                    'required' => true,
+                ],
+                'CurieRO/city' => [
+                    'priority' => 60,
+                    // 'hidden' => false,
+                    'required' => true,
+                ]
+
+            ),
+            $locale['RO'],
+        );
+        error_log(json_encode($locale['RO']));
+        return $locale;
+    }
+
 
 
     /**
@@ -168,7 +196,6 @@ class WC_Blocks_Shipping_Extension
             [
                 'namespace' => 'CurieRO-blocks',
                 'callback' => function ($data) {
-                    error_log("Callback triggered " . json_encode($data));
 
                     if (isset($data['action'])) {
 
@@ -233,6 +260,13 @@ class WC_Blocks_Shipping_Extension
 
                             WC()->session->set('curiero_sameday_selected_locker', $locker_data);
                         }
+
+                        if ($data['action'] === 'set-selected-city') {
+                            $shipping_city = $data['city'];
+
+                            WC()->session->set('curiero_selected_city', $shipping_city);
+                            do_action('woocommerce_store_api_checkout_update_order_meta');
+                        }
                     } else {
                     }
                 }
@@ -240,6 +274,24 @@ class WC_Blocks_Shipping_Extension
         );
     }
 
+
+    public function handle_get_cities_by_state()
+    {
+
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'curiero_blocks_ajax_nonce')) {
+            throw new Exception(__('Security check failed', 'curiero-plugin'));
+        }
+
+        $currentCountry = $_POST['country'];
+        $currentState = $_POST['state'];
+        if (class_exists('CurieRO_City_Select')) {
+            $CurieROCitySelect = new CurieRO_City_Select();
+
+            $cities = $CurieROCitySelect->get_cities($currentCountry);
+
+            wp_send_json_success($cities[$currentState]);
+        }
+    }
 
     function handle_get_lockers()
     {
@@ -256,7 +308,7 @@ class WC_Blocks_Shipping_Extension
                 // $shipping_country = $_POST['country'] || "RO";
 
 
-                error_log($shipping_city . " - " . $shipping_county . " - ");
+                // error_log($shipping_city . " - " . $shipping_county . " - ");
                 // Update the session data first
                 // $customer = WC()->session->get('customer');
                 // $customer['shipping_state'] = $shipping_county;
@@ -295,6 +347,23 @@ class WC_Blocks_Shipping_Extension
         }
     }
 
+    function handle_set_shipping_city()
+    {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'curiero_blocks_ajax_nonce')) {
+            throw new Exception(__('Security check failed', 'curiero-plugin'));
+        }
+
+        $shipping_city = $_POST['city'];
+
+        $customer = WC()->session->get('customer');
+        $customer['city'] = $shipping_city;
+        $customer['shipping_city'] = $shipping_city;
+
+        error_log('wc_session ' . json_encode($customer));
+
+        WC()->session->set('customer', $customer);
+    }
+
     /**
      * @param WC_Order $order
      * 
@@ -302,9 +371,18 @@ class WC_Blocks_Shipping_Extension
      */
     public function curiero_blocks_store_api_checkout_update_order_meta(WC_Order $order): void
     {
+
+        error_log('WC Order ' . json_encode($order));
+        $shipping_city = WC()->session->get('curiero_selected_city', '');
+
+        $order->set_shipping_city("Test");
+        error_log('WC Order ' . json_encode($order->get_shipping_city()));
+        $order->save();
+
+
         $locker_data = WC()->session->get('curiero_sameday_selected_locker');
         if (($locker_data)) {
-            error_log("Is not empty ");
+            // error_log("Is not empty ");
 
             $order->update_meta_data('curiero_sameday_lockers', $locker_data['id']);
             $order->update_meta_data('curiero_sameday_locker_name', $locker_data['name']);
@@ -362,34 +440,3 @@ function reorder_checkout_fields($block_data, $block, $content)
 
     return $block_data;
 }
-
-
-
-add_filter(
-    'woocommerce_get_country_locale',
-    function ($locale) {
-
-
-        $locale['RO'] = wp_parse_args(
-            array(
-                'state'      => [
-                    'priority' => 50
-                ],
-                'city'       => [
-                    // 'priority' => 60,
-                    // 'type' => 'city',
-                    'hidden'   => 'true',
-                    'required' => 'false',
-                ],
-                'CurieRO/city' => [
-                    'priority' => 60,
-                    'required' => 'true',
-                ]
-
-            ),
-            $locale['RO'],
-        );
-        error_log(json_encode($locale['RO']));
-        return $locale;
-    }
-);

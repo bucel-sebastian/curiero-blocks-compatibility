@@ -42,15 +42,7 @@ function CurieROShippingLockers() {
     setSelectedShippingRate(newSelectedShippingRate);
   }, [storeCartShippingRates]);
 
-  useEffect(() => {
-    const selectCityElement = jQuery("#shipping-CurieRO-city");
-
-    selectCityElement.select2();
-
-    selectCityElement.on("change", async function () {
-      console.log("city select changed");
-    });
-  }, []);
+  useEffect(() => {}, []);
 
   useEffect(() => {
     // Repopulate the city selector

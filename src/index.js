@@ -4,6 +4,7 @@ import CurieROShippingLockers from "./CurieROShippingLockers";
 import { registerCheckoutFilters } from "@wordpress/blocks-checkout";
 
 import "./index.css";
+import ExternalDOMManipulation from "./ExternalDOMManipulation";
 
 const render = () => {
   const { ExperimentalOrderShippingPackages } =
@@ -25,6 +26,7 @@ const render = () => {
 
   return (
     <>
+      <ExternalDOMManipulation />
       <ExperimentalOrderShippingPackages>
         <CurieROShippingLockers />
       </ExperimentalOrderShippingPackages>
