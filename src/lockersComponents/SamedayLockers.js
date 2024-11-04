@@ -4,47 +4,15 @@ import { useSelect } from "@wordpress/data";
 import { extensionCartUpdate } from "@wordpress/blocks-checkout";
 import { CART_STORE_KEY } from "@woocommerce/block-data";
 
+import Select from "react-select";
+import SamedayLockersMap from "./SamedayLockersMap";
+
 function SamedayLockers({ orderId, cartData, shippingRates }) {
   const [lockersAreLoading, setLockersAreLoading] = useState(false);
 
-  // const [selectedLocker, setSelectedLocker] = useState("");
-
   const dispatchCart = useDispatch(CART_STORE_KEY);
 
-  const handleLockerSelectorChange = async (lockerData) => {
-    // setSelectedLocker(lockerData.id);
-
-    await dispatchCart.applyExtensionCartUpdate({
-      namespace: "CurieRO-blocks",
-      data: {
-        action: "sameday-set-selected-locker",
-        order_id: orderId,
-        locker: lockerData,
-      },
-    });
-  };
-
   const [lockers, setLockers] = useState([]);
-
-  useEffect(() => {
-    setLockers(cartData?.extensions?.["CurieRO-blocks"]?.samedayLockers || []);
-
-    const selectElement = jQuery(".locker-select");
-
-    selectElement.select2();
-
-    selectElement.on("change", async function () {
-      const lockerId = jQuery(this).val();
-      const lockerData = lockers.find((locker) => locker.id === lockerId);
-
-      handleLockerSelectorChange(lockerData);
-    });
-
-    return () => {
-      selectElement.select2("destroy");
-      selectElement.off("change");
-    };
-  }, []);
 
   const getLockers = async (city, state, country) => {
     const formData = new FormData();
@@ -62,22 +30,69 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
 
     const data = await response.json();
 
-    setLockers(data.data.lockers);
+    const lockersData = [];
+    data.data.lockers.forEach((locker) => {
+      lockersData.push({
+        value: locker.id,
+        label: `${locker.name} - ${locker.address}, ${locker.city}, ${locker.county}`,
+        id: locker.id,
+        name: locker.name,
+        address: locker.address,
+        city: locker.city,
+        county: locker.county,
+      });
+    });
+
+    setLockers(lockersData);
     setLockersAreLoading(false);
   };
 
   useEffect(() => {
     setLockersAreLoading(true);
     getLockers(
-      cartData.shippingAddress.CurieRO_city,
+      cartData.shippingAddress.city,
       cartData.shippingAddress.state,
       cartData.shippingAddress.country
     );
   }, [
-    cartData.shippingAddress.CurieRO_city,
+    cartData.shippingAddress.city,
     cartData.shippingAddress.state,
     cartData.shippingAddress.country,
   ]);
+
+  const handleLockerChange = async (selectedOption) => {
+    setLockersAreLoading(true);
+    const lockerData = lockers.find(
+      (locker) => locker.value === selectedOption.value
+    );
+
+    await dispatchCart.applyExtensionCartUpdate({
+      namespace: "CurieRO-blocks",
+      data: {
+        action: "sameday-set-selected-locker",
+        order_id: orderId,
+        locker: lockerData,
+      },
+    });
+    setLockersAreLoading(false);
+  };
+
+  const handleSelectLockerFromMap = async (selectedOption) => {
+    setLockersAreLoading(true);
+    const lockerData = lockers.find(
+      (locker) => locker.value === selectedOption.lockerId.toString()
+    );
+
+    await dispatchCart.applyExtensionCartUpdate({
+      namespace: "CurieRO-blocks",
+      data: {
+        action: "sameday-set-selected-locker",
+        order_id: orderId,
+        locker: lockerData,
+      },
+    });
+    setLockersAreLoading(false);
+  };
 
   return (
     <div
@@ -93,50 +108,39 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
           {curieroBlocks.i18n.selectLockerTitle.sameday} *
         </h2>
       </div>
-
-      <select
-        className="locker-select"
-        style={{ display: "none", width: "100%", background: "#fff" }}
-        id="curiero_sameday_lockers_select"
-        name="curiero_sameday_lockers"
-      >
-        <option
-          disabled
-          selected={
-            cartData?.extensions?.["CurieRO-blocks"] &&
-            cartData?.extensions?.["CurieRO-blocks"]?.samedaySelectedLocker
-          }
-        >
-          {curieroBlocks.i18n.selectLockerPlaceholder}
-        </option>
-        {lockers.map((locker) => (
-          <option
-            key={locker.id}
-            value={locker.id}
-            selected={
-              cartData?.extensions?.["CurieRO-blocks"]?.samedaySelectedLocker
-                ?.id === locker.id
-            }
-          >
-            {locker.name} - {locker.address}, {locker.city}, {locker.county}
-          </option>
-        ))}
-      </select>
+      <Select
+        unstyled
+        styles={{
+          control: (baseStyles, state) => ({
+            ...baseStyles,
+            height: "max-content",
+          }),
+          input: (baseStyles) => ({
+            ...baseStyles,
+            height: "auto",
+          }),
+        }}
+        value={lockers.find(
+          (locker) =>
+            locker.value.toString() ===
+            cartData?.extensions?.[
+              "CurieRO-blocks"
+            ]?.samedaySelectedLocker?.id.toString()
+        )}
+        onChange={handleLockerChange}
+        options={lockers}
+        placeholder={curieroBlocks.i18n.selectLockerPlaceholder}
+        className="CurieRO-select-locker__container"
+        classNamePrefix="CurieRO-select-locker"
+        isDisabled={lockersAreLoading}
+      />
 
       {curieroBlocks?.sameday?.lockersMap ? (
         <>
-          <button
-            type="button"
-            id="sameday_map_btn"
-            style={{
-              padding: "10px",
-              fontSize: "15px",
-              width: "100%",
-              marginTop: "15px",
-            }}
-          >
-            {curieroBlocks.i18n.selectLockerMapButton.sameday}
-          </button>
+          <SamedayLockersMap
+            cartData={cartData}
+            onLockerSelected={handleSelectLockerFromMap}
+          />
         </>
       ) : (
         <></>
