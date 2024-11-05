@@ -46,8 +46,14 @@ class WC_Blocks_Shipping_Extension
         add_action('wp_ajax_curiero_get_cities_by_state', [$this, 'handle_get_cities_by_state']);
         add_action('wp_ajax_nopriv_curiero_get_cities_by_state', [$this, 'handle_get_cities_by_state']);
 
-        add_action('wp_ajax_curiero_get_lockers', [$this, 'handle_get_lockers']);
-        add_action('wp_ajax_nopriv_curiero_get_lockers', [$this, 'handle_get_lockers']);
+        add_action('wp_ajax_curiero_get_sameday_lockers', [$this, 'handle_get_sameday_lockers']);
+        add_action('wp_ajax_nopriv_curiero_get_sameday_lockers', [$this, 'handle_get_sameday_lockers']);
+
+        add_action('wp_ajax_curiero_get_fancourier_lockers', [$this, 'handle_get_fancourier_lockers']);
+        add_action('wp_ajax_nopriv_curiero_get_fancourier_lockers', [$this, 'handle_get_fancourier_lockers']);
+
+        add_action('wp_ajax_curiero_get_mygls_lockers', [$this, 'handle_get_mygls_lockers']);
+        add_action('wp_ajax_nopriv_curiero_get_mygls_lockers', [$this, 'handle_get_mygls_lockers']);
     }
 
     public function register_scripts()
@@ -77,20 +83,33 @@ class WC_Blocks_Shipping_Extension
             wp_enqueue_script('wc-blocks-shipping-extension', ['jquery', 'select2'], null, true);
 
             wp_localize_script('wc-blocks-shipping-extension', 'curieroBlocks', [
-                "sameday" => [
-                    "lockersMap" => true,
+                'sameday' => [
+                    'lockersMap' => true,
                     'selectedLocker' => WC()->session->get('curiero_sameday_selected_locker'),
                     'lockersMapClientId' => 'b8cb2ee3-41b9-4c3d-aafe-1527b453d65e'
+                ],
+                'fancourier' => [
+                    'lockersMap' => true,
+                    'selectedLocker' => WC()->session->get('curiero_fancourier_selected_locker'),
+                ],
+                'mygls' => [
+                    'lockersMap' => true,
+                    'selectedLocker' => WC()->session->get('curiero_mygls_selected_locker'),
+
                 ],
                 'i18n' => [
                     'citySelectDefault' => __('Selecteaza localitatea', 'curiero-plugin'),
                     'citySelectLoader' => __('Se incarca', 'curiero-plugin'),
                     'selectLockerTitle' => [
                         'sameday' => __('Alege punct EasyBox', 'curiero-plugin'),
+                        'fancourier' => __('Alege punct FAN Box', 'curiero-plugin'),
+                        'mygls' => __('Alege punct GLS Box', 'curiero-plugin'),
                     ],
                     'selectLockerPlaceholder' => __('Alege un locker', 'curiero-plugin'),
                     'selectLockerMapButton' => [
-                        'sameday' => __('Arata Harta Easybox', 'curiero-plugin')
+                        'sameday' => __('Arata Harta Easybox', 'curiero-plugin'),
+                        'fancourier' => __('Arata Harta FAN Box', 'curiero-plugin'),
+                        'mygls' => __('Arata Harta GLS Box', 'curiero-plugin'),
                     ]
                 ],
                 'shippingDest' => $this->shippingDest,
@@ -155,9 +174,15 @@ class WC_Blocks_Shipping_Extension
     {
         $samedayLockers = WC()->session->get('curiero_blocks_sameday_lockers', []);
         $samedaySelectedLocker = WC()->session->get('curiero_sameday_selected_locker', null);
+        $fancourierLockers = WC()->session->get('curiero_blocks_fancourier_lockers', []);
+        $fancourierSelectedLocker = WC()->session->get('curiero_fancourier_selected_locker', null);
+        $myglsLockers = WC()->session->get('curiero_blocks_mygls_lockers', []);
+        $myglsSelectedLocker = WC()->session->get('curiero_mygls_selected_locker', null);
         return [
-            'samedayLockers' => $samedayLockers,
-            'samedaySelectedLocker' => $samedaySelectedLocker
+            // 'samedayLockers' => $samedayLockers,
+            'samedaySelectedLocker' => $samedaySelectedLocker,
+            'fancourierSelectedLocker' => $fancourierSelectedLocker,
+            'myglsSelectedLocker' => $myglsSelectedLocker,
         ];
     }
 
@@ -229,6 +254,51 @@ class WC_Blocks_Shipping_Extension
 
                             WC()->session->set('curiero_sameday_selected_locker', $locker_data);
                         }
+                        if ($data['action'] === 'fancourier-set-selected-locker') {
+                            if (!isset($data['order_id']) || !isset($data['locker'])) {
+                                return new WP_Error(
+                                    'missing_data',
+                                    'Missing required locker data',
+                                    ['status' => 400]
+                                );
+                            }
+
+                            $locker_data = is_string($data['locker']) ? json_decode(stripslashes($data['locker']), true) :
+                                $data['locker'];
+
+                            if (!$locker_data) {
+                                return new WP_Error(
+                                    'invalid_locker_data',
+                                    'Invalid locker data format',
+                                    ['status' => 400]
+                                );
+                            }
+
+                            WC()->session->set('curiero_fancourier_selected_locker', $locker_data);
+                        }
+                        if ($data['action'] === 'mygls-set-selected-locker') {
+                            if (!isset($data['order_id']) || !isset($data['locker'])) {
+                                return new WP_Error(
+                                    'missing_data',
+                                    'Missing required locker data',
+                                    ['status' => 400]
+                                );
+                            }
+
+
+                            $locker_data = is_string($data['locker']) ? json_decode(stripslashes($data['locker']), true) :
+                                $data['locker'];
+
+                            if (!$locker_data) {
+                                return new WP_Error(
+                                    'invalid_locker_data',
+                                    'Invalid locker data format',
+                                    ['status' => 400]
+                                );
+                            }
+
+                            WC()->session->set('curiero_mygls_selected_locker', $locker_data);
+                        }
 
                         if ($data['action'] === 'set-selected-city') {
                             $shipping_city = $data['city'];
@@ -262,7 +332,7 @@ class WC_Blocks_Shipping_Extension
         }
     }
 
-    function handle_get_lockers()
+    public function handle_get_sameday_lockers()
     {
         try {
 
@@ -275,8 +345,6 @@ class WC_Blocks_Shipping_Extension
                 $shipping_city = $_POST['city'];
                 $shipping_county = $_POST['state'];
 
-                $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
-
                 $customer = WC()->session->get('customer');
                 $customer['shipping_state'] = $shipping_county;
                 WC()->session->set('customer', $customer);
@@ -286,6 +354,78 @@ class WC_Blocks_Shipping_Extension
 
                 WC()->session->set(
                     'curiero_blocks_sameday_lockers',
+                    array_values($lockers_list->toArray())
+                );
+
+                wp_send_json_success([
+                    'lockers' => array_values($lockers_list->toArray())
+                ]);
+            }
+        } catch (Exception $e) {
+            wp_send_json_error([
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function handle_get_fancourier_lockers()
+    {
+        try {
+            if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'curiero_blocks_ajax_nonce')) {
+                throw new Exception(__('Security check failed', 'curiero-plugin'));
+            }
+
+
+            if (class_exists('Fan_Shipping_Method')) {
+                $shipping_city = $_POST['city'];
+                $shipping_county = $_POST['state'];
+
+                $customer = WC()->session->get('customer');
+                $customer['shipping_state'] = $shipping_county;
+                WC()->session->set('customer', $customer);
+
+                $shipping_method = WC()->shipping->get_shipping_methods()['fan'];
+
+                $lockers_list = $shipping_method->get_fanbox_list($shipping_county, $shipping_city);
+
+                WC()->session->set(
+                    'curiero_blocks_fancourier_lockers',
+                    array_values($lockers_list->toArray())
+                );
+
+                wp_send_json_success([
+                    'lockers' => array_values($lockers_list->toArray())
+                ]);
+            }
+        } catch (Exception $e) {
+            wp_send_json_error([
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function handle_get_mygls_lockers()
+    {
+        try {
+
+            if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'curiero_blocks_ajax_nonce')) {
+                throw new Exception(__('Security check failed', 'curiero-plugin'));
+            }
+
+
+            if (class_exists('MyGLS_Shipping_Method')) {
+                $shipping_city = $_POST['city'];
+                $shipping_county = $_POST['state'];
+
+                $customer = WC()->session->get('customer');
+                $customer['shipping_state'] = $shipping_county;
+                WC()->session->set('customer', $customer);
+
+                $shipping_method = WC()->shipping->get_shipping_methods()['mygls'];
+                $lockers_list = $shipping_method->get_mygls_box_list($shipping_county, $shipping_city);
+
+                WC()->session->set(
+                    'curiero_blocks_mygls_lockers',
                     array_values($lockers_list->toArray())
                 );
 

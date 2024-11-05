@@ -5,27 +5,24 @@ import { extensionCartUpdate } from "@wordpress/blocks-checkout";
 import { CART_STORE_KEY } from "@woocommerce/block-data";
 
 import Select from "react-select";
-import SamedayLockersMap from "./SamedayLockersMap";
-import useSamedayCounties from "../hooks/useSamedayCounties";
+import MyGlsLockersMap from "./MyGlsLockersMap";
 
-function SamedayLockers({ orderId, cartData, shippingRates }) {
+function MyGlsLockers({ orderId, cartData, shippingRates }) {
   const [lockersAreLoading, setLockersAreLoading] = useState(false);
 
-  console.log("Cart data - ", cartData);
+  // console.log("Cart data - ", cartData);
 
   const dispatchCart = useDispatch(CART_STORE_KEY);
 
-  const samedayCounties = useSamedayCounties(
-    curieroBlocks.shippingDest === "billing_only"
-      ? cartData.billingAddress.country
-      : cartData.shippingAddress.country
-  );
-
   const [lockers, setLockers] = useState([]);
+
+  useEffect(() => {
+    console.log("lockers - ", lockers);
+  }, [lockers]);
 
   const getLockers = async (city, state, country) => {
     const formData = new FormData();
-    formData.append("action", "curiero_get_sameday_lockers");
+    formData.append("action", "curiero_get_mygls_lockers");
     formData.append("nonce", curieroBlocks.nonce);
     formData.append("city", city);
     formData.append("state", state);
@@ -38,6 +35,8 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
     });
 
     const data = await response.json();
+
+    console.log(data);
 
     const lockersData = [];
     data.data.lockers.forEach((locker) => {
@@ -78,7 +77,7 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
     await dispatchCart.applyExtensionCartUpdate({
       namespace: "CurieRO-blocks",
       data: {
-        action: "sameday-set-selected-locker",
+        action: "mygls-set-selected-locker",
         order_id: orderId,
         locker: lockerData,
       },
@@ -87,57 +86,32 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
   };
 
   const handleSelectLockerFromMap = async (selectedOption) => {
-    setLockersAreLoading(true);
+    console.log("Selected locker ", selectedOption, lockers);
     const lockerData = lockers.find(
-      (locker) => locker.value === selectedOption.lockerId.toString()
+      (locker) => locker.value === selectedOption.id.toString()
     );
     // Trebuie rectificat deoarece cauta doar in lockerele din zona
+    console.log(lockerData);
+
     await dispatchCart.applyExtensionCartUpdate({
       namespace: "CurieRO-blocks",
       data: {
-        action: "sameday-set-selected-locker",
+        action: "mygls-set-selected-locker",
         order_id: orderId,
         locker: lockerData,
       },
     });
-
-    // if (curieroBlocks.shippingDest === "billing_only") {
-    //   await dispatchCart.setBillingAddress({
-    //     city: selectedOption.city,
-    //     state: samedayCounties.find(
-    //       (county) => county[1] === selectedOption.county
-    //     )[0],
-    //   });
-    //   await dispatchCart.setShippingAddress({
-    //     city: selectedOption.city,
-    //     state: samedayCounties.find(
-    //       (county) => county[1] === selectedOption.county
-    //     )[0],
-    //   });
-    // } else {
-    //   await dispatchCart.setShippingAddress({
-    //     city: selectedOption.city,
-    //     state: samedayCounties.find(
-    //       (county) => county[1] === selectedOption.county
-    //     )[0],
-    //   });
-    // }
-
     setLockersAreLoading(false);
   };
 
   return (
-    <div
-      className={` ${
-        lockersAreLoading ? "wc-block-components-loading-mask" : ""
-      }`}
-    >
+    <div>
       <div className="wc-block-components-checkout-step__heading">
         <h2
           className="wc-block-components-title wc-block-components-checkout-step__title"
           aria-hidden="true"
         >
-          {curieroBlocks.i18n.selectLockerTitle.sameday} *
+          {curieroBlocks.i18n.selectLockerTitle.mygls} *
         </h2>
       </div>
       <Select
@@ -157,7 +131,7 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
             locker.value.toString() ===
             cartData?.extensions?.[
               "CurieRO-blocks"
-            ]?.samedaySelectedLocker?.id.toString()
+            ]?.myglsSelectedLocker?.id.toString()
         )}
         onChange={handleLockerChange}
         options={lockers}
@@ -167,9 +141,9 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
         isDisabled={lockersAreLoading}
       />
 
-      {curieroBlocks?.sameday?.lockersMap ? (
+      {curieroBlocks?.mygls?.lockersMap ? (
         <>
-          <SamedayLockersMap
+          <MyGlsLockersMap
             cartData={cartData}
             onLockerSelected={handleSelectLockerFromMap}
           />
@@ -181,4 +155,4 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
   );
 }
 
-export default SamedayLockers;
+export default MyGlsLockers;

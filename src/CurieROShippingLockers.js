@@ -18,6 +18,13 @@ function CurieROShippingLockers() {
 
     return store.getShippingRates();
   }, []);
+
+  const storeIsShippingRateBeingSelected = useSelect((select) => {
+    const store = select("wc/store/cart");
+
+    return store.isShippingRateBeingSelected();
+  }, []);
+
   const storeCartData = useSelect((select) => {
     const store = select("wc/store/cart");
 
@@ -30,7 +37,7 @@ function CurieROShippingLockers() {
   }, []);
 
   useEffect(() => {
-    // console.log(storeCartShippingRates, storeCheckoutOrderId, storeCartData);
+    console.log(storeCartShippingRates, storeCheckoutOrderId, storeCartData);
   }, [storeCartShippingRates, storeCheckoutOrderId, storeCartData]);
 
   useEffect(() => {
@@ -52,13 +59,20 @@ function CurieROShippingLockers() {
     <>
       {selectedShippingRate !== null ? (
         <>
-          <div className="wc-block-components-shipping-rates-control">
+          <div
+            className={`wc-block-components-shipping-rates-control ${
+              storeIsShippingRateBeingSelected
+                ? "CurieRO-wc-block-disabled"
+                : ""
+            }`}
+          >
             <div className="shipping-method-content">
               <LockersComponent
                 rateId={selectedShippingRate?.rate_id}
                 orderId={storeCheckoutOrderId}
                 cartData={storeCartData}
                 shippingRates={storeCartShippingRates}
+
                 // storeCart={storeCart}
               />
             </div>

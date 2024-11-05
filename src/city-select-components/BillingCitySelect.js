@@ -15,11 +15,7 @@ function BillingCitySelect({ initialData }) {
 
   const storeCartData = useSelect((select) => {
     const store = select("wc/store/cart");
-    console.log("cart data ", store);
     const cartData = store.getCartData();
-
-    console.log("cart data ", cartData);
-
     return cartData;
   });
 

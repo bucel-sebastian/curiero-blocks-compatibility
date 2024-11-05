@@ -20,15 +20,6 @@ function ShippingCitySelect({ initialData }) {
     return cartData;
   });
 
-  const storeCheckoutData = useSelect((select) => {
-    const store = select("wc/store/checkout");
-    const checkoutData = store.getCheckoutData();
-
-    console.log("Checkout data - ", checkoutData);
-
-    return checkoutData;
-  });
-
   const getCitySelectOptions = async (state, country) => {
     setCitySelectInputDisabled(true);
     const formData = new FormData();

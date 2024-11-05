@@ -232,3 +232,8 @@
   width: 100%;
   margin-top: 15px;
 }
+
+.CurieRO-wc-block-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
