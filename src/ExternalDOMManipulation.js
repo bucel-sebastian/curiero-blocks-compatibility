@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, createRoot } from "@wordpress/element";
 import { useSelect } from "@wordpress/data";
+import { useDispatch } from "@wordpress/data";
 import ShippingCitySelect from "./city-select-components/ShippingCitySelect";
 import BillingCitySelect from "./city-select-components/BillingCitySelect";
 
 function ExternalDOMManipulation() {
+  const dispatchCart = useDispatch("wc/store/cart");
   const storeCartData = useSelect((select) => {
     const store = select("wc/store/cart");
     const cartData = store.getCartData();
@@ -20,21 +22,28 @@ function ExternalDOMManipulation() {
     }
 
     const shippingCityInput = document.getElementById("shipping-city");
-    const shippingCityContainer = document.getElementById(
-      "CurieRO-shipping-city-container"
-    );
+    // const shippingCityContainer = document.getElementById(
+    //   "CurieRO-shipping-city-container"
+    // );
 
-    if (shippingCityInput && !shippingCityContainer) {
-      const container = document.createElement("div");
-      container.id = "CurieRO-shipping-city-container";
+    const container =
+      document.getElementById("CurieRO-shipping-city-container") ??
+      document.createElement("div");
+    container.id = "CurieRO-shipping-city-container";
 
-      if (storeCartData.shippingAddress.country === "RO") {
-        shippingCityInput.parentNode.insertBefore(
-          container,
-          shippingCityInput.nextSibling
-        );
+    if (!shippingCityInput.parentNode.contains(container)) {
+      shippingCityInput.parentNode.insertBefore(
+        container,
+        shippingCityInput.nextSibling
+      );
+    }
+    const root = createRoot(container);
 
-        const root = createRoot(container);
+    if (storeCartData.shippingAddress.country === "RO") {
+      if (
+        shippingCityInput
+        // && !shippingCityContainer
+      ) {
         shippingCityInput.setAttribute("type", "hidden");
 
         shippingCityInput.parentNode
@@ -47,6 +56,18 @@ function ExternalDOMManipulation() {
           </>
         );
       }
+    } else {
+      shippingCityInput.setAttribute("type", "text");
+
+      shippingCityInput.parentNode
+        .querySelector("label")
+        .classList.remove("CurieRO-select__label");
+
+      root.unmount();
+      container.remove();
+      dispatchCart.setShippingAddress({
+        city: "",
+      });
     }
   };
 
@@ -59,21 +80,28 @@ function ExternalDOMManipulation() {
     }
 
     const billingCityInput = document.getElementById("billing-city");
-    const billingCityContainer = document.getElementById(
-      "CurieRO-billing-city-container"
-    );
+    // const billingCityContainer = document.getElementById(
+    //   "CurieRO-billing-city-container"
+    // );
 
-    if (billingCityInput && !billingCityContainer) {
-      const container = document.createElement("div");
-      container.id = "CurieRO-billing-city-container";
+    const container =
+      document.getElementById("CurieRO-billing-city-container") ??
+      document.createElement("div");
+    container.id = "CurieRO-billing-city-container";
 
-      if (storeCartData.billingAddress.country === "RO") {
-        billingCityInput.parentNode.insertBefore(
-          container,
-          billingCityInput.nextSibling
-        );
+    if (!billingCityInput.parentNode.contains(container)) {
+      billingCityInput.parentNode.insertBefore(
+        container,
+        billingCityInput.nextSibling
+      );
+    }
+    const root = createRoot(container);
 
-        const root = createRoot(container);
+    if (storeCartData.billingAddress.country === "RO") {
+      if (
+        billingCityInput
+        // && !billingCityContainer
+      ) {
         billingCityInput.setAttribute("type", "hidden");
 
         billingCityInput.parentNode
@@ -86,16 +114,47 @@ function ExternalDOMManipulation() {
           </>
         );
       }
+    } else {
+      billingCityInput.setAttribute("type", "text");
+
+      billingCityInput.parentNode
+        .querySelector("label")
+        .classList.remove("CurieRO-select__label");
+
+      root.unmount();
+      container.remove();
+      dispatchCart.setBillingAddress({
+        city: "",
+      });
+
+      if (curieroBlocks.shippingDest === "billing_only") {
+        dispatchCart.setShippingAddress({
+          city: "",
+        });
+      }
     }
+
+    return () => {
+      if (root) {
+        root.unmount();
+      }
+      container.remove();
+    };
   };
 
   useEffect(() => {
     renderShippingCitySelector();
-  }, [document.querySelector("#shipping-city")]);
+  }, [
+    document.querySelector("#shipping-city"),
+    storeCartData.shippingAddress.country,
+  ]);
 
   useEffect(() => {
     renderBillingCitySelector();
-  }, [document.querySelector("#billing-city")]);
+  }, [
+    document.querySelector("#billing-city"),
+    storeCartData.billingAddress.country,
+  ]);
 
   return <>External DOM</>;
 }

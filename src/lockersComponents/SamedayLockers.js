@@ -11,8 +11,6 @@ import useSamedayCounties from "../hooks/useSamedayCounties";
 function SamedayLockers({ orderId, cartData, shippingRates }) {
   const [lockersAreLoading, setLockersAreLoading] = useState(false);
 
-  console.log("Cart data - ", cartData);
-
   const dispatchCart = useDispatch(CART_STORE_KEY);
 
   const samedayCounties = useSamedayCounties(

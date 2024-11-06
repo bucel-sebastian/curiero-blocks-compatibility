@@ -6,17 +6,14 @@ import { useDispatch } from "@wordpress/data";
 function ShippingCitySelect({ initialData }) {
   const dispatchCart = useDispatch("wc/store/cart");
 
-  const [initialShippingAddress, setInitialShippingAddress] = useState({
-    ...initialData,
-  });
-  const [selectedCity, setSelectedCity] = useState(initialData.city);
+  const [initialShippingAddress, setInitialShippingAddress] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
   const [citySelectInputOptions, setCitySelectInputOptions] = useState([]);
   const [citySelectInputDisabled, setCitySelectInputDisabled] = useState(true);
 
   const storeCartData = useSelect((select) => {
     const store = select("wc/store/cart");
     const cartData = store.getCartData();
-
     return cartData;
   });
 
@@ -37,11 +34,15 @@ function ShippingCitySelect({ initialData }) {
       const body = await response.json();
 
       const options = [];
-
       body.data.forEach((option) => {
         options.push({ value: option, label: option });
       });
-
+      if (initialData.state !== storeCartData.shippingAddress.state) {
+        setSelectedCity(null);
+        dispatchCart.setShippingAddress({
+          city: "",
+        });
+      }
       setCitySelectInputOptions(options);
     }
   };
@@ -59,13 +60,14 @@ function ShippingCitySelect({ initialData }) {
       storeCartData.shippingAddress.state &&
       storeCartData.shippingAddress.state !== "" &&
       storeCartData.shippingAddress.country &&
-      storeCartData.shippingAddress.country !== ""
+      storeCartData.shippingAddress.country !== "" &&
+      storeCartData.shippingAddress.country === "RO"
     ) {
       if (
         initialShippingAddress.state !== storeCartData.shippingAddress.state ||
         initialShippingAddress.country !== storeCartData.shippingAddress.country
       ) {
-        setSelectedCity("");
+        setSelectedCity(null);
         dispatchCart.setShippingAddress({
           city: "",
         });
@@ -109,15 +111,27 @@ function ShippingCitySelect({ initialData }) {
             height: "auto",
           }),
         }}
-        value={citySelectInputOptions.find(
-          (option) => option.value === selectedCity
-        )}
+        value={
+          selectedCity
+            ? citySelectInputOptions.find(
+                (option) => option.value === selectedCity?.value
+              )
+            : citySelectInputOptions.find(
+                (option) => option.value === initialData.city
+              )
+        }
         onChange={handleCityChange}
         options={citySelectInputOptions}
         placeholder={
-          citySelectInputDisabled
-            ? curieroBlocks.i18n.citySelectLoader
-            : curieroBlocks.i18n.citySelectDefault
+          citySelectInputDisabled ? (
+            curieroBlocks.i18n.citySelectLoader
+          ) : (
+            <>
+              {citySelectInputOptions.length === 0
+                ? curieroBlocks.i18n.citySelectNoState
+                : curieroBlocks.i18n.citySelectDefault}
+            </>
+          )
         }
         className="CurieRO-select__container"
         classNamePrefix="CurieRO-select"

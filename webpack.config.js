@@ -36,6 +36,7 @@ module.exports = {
     "@wordpress/element": "window.wp.element",
     "@wordpress/plugins": "window.wp.plugins",
     "@wordpress/data": "window.wp.data",
+    "@wordpress/notices": "window.wp.notices",
     "@wordpress/components": "window.wp.components",
     "@wordpress/i18n": "window.wp.i18n",
     "@wordpress/blocks-checkout": "window.wc.blocksCheckout",

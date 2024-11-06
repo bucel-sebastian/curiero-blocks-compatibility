@@ -6,10 +6,8 @@ import { useDispatch } from "@wordpress/data";
 function BillingCitySelect({ initialData }) {
   const dispatchCart = useDispatch("wc/store/cart");
 
-  const [initialBillingAddress, setInitialBillingAddress] = useState({
-    ...initialData,
-  });
-  const [selectedCity, setSelectedCity] = useState(initialData.city);
+  const [initialBillingAddress, setInitialBillingAddress] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
   const [citySelectInputOptions, setCitySelectInputOptions] = useState([]);
   const [citySelectInputDisabled, setCitySelectInputDisabled] = useState(true);
 
@@ -26,21 +24,27 @@ function BillingCitySelect({ initialData }) {
     formData.append("nonce", curieroBlocks.nonce);
     formData.append("state", state);
     formData.append("country", country);
-
     const response = await fetch(curieroBlocks.ajaxurl, {
       method: "POST",
       body: formData,
     });
-
     if (response.ok) {
       const body = await response.json();
-
       const options = [];
-
       body.data.forEach((option) => {
         options.push({ value: option, label: option });
       });
-      setSelectedCity("");
+      if (initialData.state !== storeCartData.billingAddress.state) {
+        setSelectedCity(null);
+        dispatchCart.setBillingAddress({
+          city: "",
+        });
+        if (curieroBlocks.shippingDest === "billing_only") {
+          dispatchCart.setShippingAddress({
+            city: "",
+          });
+        }
+      }
       setCitySelectInputOptions(options);
     }
   };
@@ -58,16 +62,22 @@ function BillingCitySelect({ initialData }) {
       storeCartData.billingAddress.state &&
       storeCartData.billingAddress.state !== "" &&
       storeCartData.billingAddress.country &&
-      storeCartData.billingAddress.country !== ""
+      storeCartData.billingAddress.country !== "" &&
+      storeCartData.billingAddress.country === "RO"
     ) {
       if (
-        initialBillingAddress.state !== storeCartData.billingAddress.state ||
-        initialBillingAddress.country !== storeCartData.billingAddress.country
+        initialData.state !== storeCartData.billingAddress.state ||
+        initialData.country !== storeCartData.billingAddress.country
       ) {
-        setSelectedCity("");
+        setSelectedCity(null);
         dispatchCart.setBillingAddress({
           city: "",
         });
+        if (curieroBlocks.shippingDest === "billing_only") {
+          dispatchCart.setShippingAddress({
+            city: "",
+          });
+        }
       }
 
       setInitialBillingAddress((prev) => ({
@@ -113,9 +123,15 @@ function BillingCitySelect({ initialData }) {
             height: "auto",
           }),
         }}
-        value={citySelectInputOptions.find(
-          (option) => option.value === selectedCity
-        )}
+        value={
+          selectedCity
+            ? citySelectInputOptions.find(
+                (option) => option.value === selectedCity?.value
+              )
+            : citySelectInputOptions.find(
+                (option) => option.value === initialData.city
+              )
+        }
         onChange={handleCityChange}
         options={citySelectInputOptions}
         placeholder={

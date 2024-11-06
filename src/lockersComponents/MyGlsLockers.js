@@ -10,8 +10,6 @@ import MyGlsLockersMap from "./MyGlsLockersMap";
 function MyGlsLockers({ orderId, cartData, shippingRates }) {
   const [lockersAreLoading, setLockersAreLoading] = useState(false);
 
-  // console.log("Cart data - ", cartData);
-
   const dispatchCart = useDispatch(CART_STORE_KEY);
 
   const [lockers, setLockers] = useState([]);
@@ -35,8 +33,6 @@ function MyGlsLockers({ orderId, cartData, shippingRates }) {
     });
 
     const data = await response.json();
-
-    console.log(data);
 
     const lockersData = [];
     data.data.lockers.forEach((locker) => {
@@ -86,13 +82,17 @@ function MyGlsLockers({ orderId, cartData, shippingRates }) {
   };
 
   const handleSelectLockerFromMap = async (selectedOption) => {
-    console.log("Selected locker ", selectedOption, lockers);
-    const lockerData = lockers.find(
-      (locker) => locker.value === selectedOption.id.toString()
-    );
-    // Trebuie rectificat deoarece cauta doar in lockerele din zona
-    console.log(lockerData);
+    const lockerData = {
+      value: selectedOption.id,
+      label: `${selectedOption.name} - ${selectedOption.contact.address}, ${selectedOption.contact.city}`,
+      id: selectedOption.id,
+      name: selectedOption.name,
+      address: selectedOption.contact.address,
+      city: selectedOption.contact.city,
+      county: selectedOption.contact.county,
+    };
 
+    // Trebuie rectificat deoarece cauta doar in lockerele din zona
     await dispatchCart.applyExtensionCartUpdate({
       namespace: "CurieRO-blocks",
       data: {

@@ -3,6 +3,13 @@ import { useSelect } from "@wordpress/data";
 import { useState, useEffect } from "@wordpress/element";
 import LockersComponent from "./LockersComponent";
 
+// import { store as noticesStore } from "@wordpress/notices";
+// const notices = useSelect((select) => {
+//   const store = select(noticesStore);
+
+//   return store.getNotices();
+// }, []);
+
 const lockers_id = ["curiero_sameday_lockers"];
 
 function CurieROShippingLockers() {
@@ -27,7 +34,7 @@ function CurieROShippingLockers() {
 
   const storeCartData = useSelect((select) => {
     const store = select("wc/store/cart");
-
+    console.log(store.getCartData());
     return store.getCartData();
   }, []);
   const storeCart = useSelect((select) => {
@@ -36,9 +43,9 @@ function CurieROShippingLockers() {
     return store;
   }, []);
 
-  useEffect(() => {
-    console.log(storeCartShippingRates, storeCheckoutOrderId, storeCartData);
-  }, [storeCartShippingRates, storeCheckoutOrderId, storeCartData]);
+  // useEffect(() => {
+  //   console.log(storeCartShippingRates, storeCheckoutOrderId, storeCartData);
+  // }, [storeCartShippingRates, storeCheckoutOrderId, storeCartData]);
 
   useEffect(() => {
     const shippingRates = storeCartShippingRates[0]?.shipping_rates || [];

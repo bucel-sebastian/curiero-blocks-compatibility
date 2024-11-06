@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "@wordpress/element";
 import useFancourierCounties from "../hooks/useFancourierCounties";
 
-function FancourierLockersMap({ cartData, onLockerSelected }) {
+function FancourierLockersMap({ cartData, onLockerSelected, isDisabled }) {
   const fanboxMapDiv = useRef(null);
   const fancourierCounties = useFancourierCounties(
     curieroBlocks.shippingDest === "billing_only"
@@ -51,6 +51,7 @@ function FancourierLockersMap({ cartData, onLockerSelected }) {
         type="button"
         className="CurieRO-show-lockers-map-btn"
         onClick={handleOpenFancourierLockersMap}
+        disabled={isDisabled}
       >
         {curieroBlocks.i18n.selectLockerMapButton.fancourier}
       </button>

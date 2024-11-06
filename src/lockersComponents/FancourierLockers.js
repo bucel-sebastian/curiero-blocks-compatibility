@@ -11,8 +11,6 @@ import FancourierLockersMap from "./FancourierLockersMap";
 function FancourierLockers({ orderId, cartData, shippingRates }) {
   const [lockersAreLoading, setLockersAreLoading] = useState(false);
 
-  //   console.log("Cart data - ", cartData);
-
   const dispatchCart = useDispatch(CART_STORE_KEY);
 
   const fancourierCounties = useFancourierCounties(
@@ -38,8 +36,6 @@ function FancourierLockers({ orderId, cartData, shippingRates }) {
     });
 
     const data = await response.json();
-
-    console.log(data);
 
     const lockersData = [];
     data.data.lockers.forEach((locker) => {
@@ -89,10 +85,14 @@ function FancourierLockers({ orderId, cartData, shippingRates }) {
   };
 
   const handleSelectLockerFromMap = async (selectedOption) => {
-    console.log("Selected locker ", selectedOption);
-    const lockerData = lockers.find(
-      (locker) => locker.value === selectedOption.id.toString()
-    );
+    const lockerData = {
+      value: selectedOption.id,
+      label: `${selectedOption.name} - ${selectedOption.address}`,
+      id: selectedOption.id,
+      name: selectedOption.name,
+      address: selectedOption.address,
+    };
+
     // Trebuie rectificat deoarece cauta doar in lockerele din zona
     await dispatchCart.applyExtensionCartUpdate({
       namespace: "CurieRO-blocks",
@@ -148,6 +148,7 @@ function FancourierLockers({ orderId, cartData, shippingRates }) {
           <FancourierLockersMap
             cartData={cartData}
             onLockerSelected={handleSelectLockerFromMap}
+            isDisabled={lockersAreLoading}
           />
         </>
       ) : (

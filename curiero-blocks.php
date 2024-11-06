@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: WooCommerce Blocks Checkout Shipping Extension
+ * Plugin Name: CurieRO Blocks
  * Description: Extends WooCommerce blocks checkout to update shipping package display
  * Version: 1.0.0
  * Author: Your Name
@@ -68,6 +68,7 @@ class WC_Blocks_Shipping_Extension
 
     public function enqueue_editor_assets()
     {
+
         wp_enqueue_script('wc-blocks-shipping-extension');
     }
 
@@ -99,6 +100,7 @@ class WC_Blocks_Shipping_Extension
                 ],
                 'i18n' => [
                     'citySelectDefault' => __('Selecteaza localitatea', 'curiero-plugin'),
+                    'citySelectNoState' => __('Va rugam sa selectati un judet', 'curiero-plugin'),
                     'citySelectLoader' => __('Se incarca', 'curiero-plugin'),
                     'selectLockerTitle' => [
                         'sameday' => __('Alege punct EasyBox', 'curiero-plugin'),
@@ -140,6 +142,10 @@ class WC_Blocks_Shipping_Extension
 
     public function curiero_blocks_change_checkout_fields($locale): array
     {
+        error_log("locale " . json_encode($locale['RO']));
+        error_log("option " . get_option('disable_zipcode_in_checkout'));
+
+        $disable_zipcode_in_checkout = get_option('disable_zipcode_in_checkout');
         $locale['RO'] = wp_parse_args(
             array(
                 'state'      => [
@@ -151,6 +157,10 @@ class WC_Blocks_Shipping_Extension
                     'hidden'   => false,
                     'required' => true,
                 ],
+                'postcode'   => [
+                    'hidden' => $disable_zipcode_in_checkout === '0' ? false : true
+                ]
+
                 // 'CurieRO/city' => [
                 //     'priority' => 60,
                 //     // 'hidden' => false,
@@ -178,6 +188,15 @@ class WC_Blocks_Shipping_Extension
         $fancourierSelectedLocker = WC()->session->get('curiero_fancourier_selected_locker', null);
         $myglsLockers = WC()->session->get('curiero_blocks_mygls_lockers', []);
         $myglsSelectedLocker = WC()->session->get('curiero_mygls_selected_locker', null);
+
+
+        error_log(json_encode([
+            // 'samedayLockers' => $samedayLockers,a
+            'samedaySelectedLocker' => $samedaySelectedLocker,
+            'fancourierSelectedLocker' => $fancourierSelectedLocker,
+            'myglsSelectedLocker' => $myglsSelectedLocker,
+        ]));
+
         return [
             // 'samedayLockers' => $samedayLockers,
             'samedaySelectedLocker' => $samedaySelectedLocker,
@@ -253,6 +272,8 @@ class WC_Blocks_Shipping_Extension
                             }
 
                             WC()->session->set('curiero_sameday_selected_locker', $locker_data);
+                            WC()->session->set('curiero_fancourier_selected_locker', null);
+                            WC()->session->set('curiero_mygls_selected_locker', null);
                         }
                         if ($data['action'] === 'fancourier-set-selected-locker') {
                             if (!isset($data['order_id']) || !isset($data['locker'])) {
@@ -275,6 +296,8 @@ class WC_Blocks_Shipping_Extension
                             }
 
                             WC()->session->set('curiero_fancourier_selected_locker', $locker_data);
+                            WC()->session->set('curiero_mygls_selected_locker', null);
+                            WC()->session->set('curiero_sameday_selected_locker', null);
                         }
                         if ($data['action'] === 'mygls-set-selected-locker') {
                             if (!isset($data['order_id']) || !isset($data['locker'])) {
@@ -289,6 +312,8 @@ class WC_Blocks_Shipping_Extension
                             $locker_data = is_string($data['locker']) ? json_decode(stripslashes($data['locker']), true) :
                                 $data['locker'];
 
+                            error_log("MYGLS LOCKER " . json_encode($locker_data));
+
                             if (!$locker_data) {
                                 return new WP_Error(
                                     'invalid_locker_data',
@@ -298,12 +323,15 @@ class WC_Blocks_Shipping_Extension
                             }
 
                             WC()->session->set('curiero_mygls_selected_locker', $locker_data);
+                            WC()->session->set('curiero_sameday_selected_locker', null);
+                            WC()->session->set('curiero_fancourier_selected_locker', null);
                         }
 
                         if ($data['action'] === 'set-selected-city') {
                             $shipping_city = $data['city'];
 
                             WC()->session->set('curiero_selected_city', $shipping_city);
+
                             do_action('woocommerce_store_api_checkout_update_order_meta');
                         }
                     } else {
@@ -388,10 +416,14 @@ class WC_Blocks_Shipping_Extension
 
                 $lockers_list = $shipping_method->get_fanbox_list($shipping_county, $shipping_city);
 
+                error_log("lockers FAN " . $shipping_county . " " . json_encode($lockers_list));
+
                 WC()->session->set(
                     'curiero_blocks_fancourier_lockers',
                     array_values($lockers_list->toArray())
                 );
+                WC()->session->set('curiero_sameday_selected_locker', null);
+                WC()->session->set('curiero_mygls_selected_locker', null);
 
                 wp_send_json_success([
                     'lockers' => array_values($lockers_list->toArray())
@@ -424,10 +456,13 @@ class WC_Blocks_Shipping_Extension
                 $shipping_method = WC()->shipping->get_shipping_methods()['mygls'];
                 $lockers_list = $shipping_method->get_mygls_box_list($shipping_county, $shipping_city);
 
+                error_log("lockers " . json_encode($lockers_list));
+
                 WC()->session->set(
                     'curiero_blocks_mygls_lockers',
                     array_values($lockers_list->toArray())
                 );
+
 
                 wp_send_json_success([
                     'lockers' => array_values($lockers_list->toArray())
@@ -468,12 +503,39 @@ class WC_Blocks_Shipping_Extension
         $order->set_shipping_city("Test");
         $order->save();
 
+        $sameday_selected_locker = WC()->session->get('curiero_sameday_selected_locker');
+        $fancourier_selected_locker = WC()->session->get('curiero_fancourier_selected_locker');
+        $mygls_selected_locker = WC()->session->get('curiero_mygls_selected_locker');
 
-        $locker_data = WC()->session->get('curiero_sameday_selected_locker');
-        if (($locker_data)) {
+        if ($sameday_selected_locker) {
+            $selected_locker = 'sameday';
+            $locker_data = $sameday_selected_locker;
+        }
+        if ($fancourier_selected_locker) {
+            $selected_locker = 'fancourier';
+            $locker_data = $fancourier_selected_locker;
+        }
+        if ($mygls_selected_locker) {
+            $selected_locker = 'mygls';
+            $locker_data = $mygls_selected_locker;
+        }
 
-            $order->update_meta_data('curiero_sameday_lockers', $locker_data['id']);
-            $order->update_meta_data('curiero_sameday_locker_name', $locker_data['name']);
+        error_log("Lockers data " . $sameday_selected_locker . " " . $fancourier_selected_locker . " " . $mygls_selected_locker);
+        error_log("Selected Locker data " . $locker_data);
+        if ($selected_locker) {
+
+            if ($selected_locker === 'sameday') {
+                $order->update_meta_data('curiero_sameday_lockers', $locker_data['id']);
+                $order->update_meta_data('curiero_sameday_locker_name', $locker_data['name']);
+            }
+            if ($selected_locker === 'fancourier') {
+                $order->update_meta_data('curiero_fan_fanbox', $locker_data['id']);
+                // $order->update_meta_data('curiero_sameday_locker_name', $locker_data['name']);
+            }
+            if ($selected_locker === 'mygls') {
+                $order->update_meta_data('curiero_mygls_box', $locker_data['id']);
+                // $order->update_meta_data('curiero_sameday_locker_name', $locker_data['name']);
+            }
 
             $shipping_method = WC()->shipping->get_shipping_methods()['sameday'];
             if ($shipping_method && $shipping_method->get_option('locker_shipping_address') === 'yes') {
