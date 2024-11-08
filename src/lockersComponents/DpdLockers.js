@@ -6,18 +6,18 @@ import { CART_STORE_KEY } from "@woocommerce/block-data";
 
 import Select from "react-select";
 
-function FancourierCollectPoints({ orderId, cartData, shippingRates }) {
+function DpdLockers({ orderId, cartData, shippingRates }) {
   const [lockersAreLoading, setLockersAreLoading] = useState(false);
 
-  //   console.log("Cart data - ", cartData);
-
   const dispatchCart = useDispatch(CART_STORE_KEY);
+
+  const dpdCounties = null;
 
   const [lockers, setLockers] = useState([]);
 
   const getLockers = async (city, state, country) => {
     const formData = new FormData();
-    formData.append("action", "curiero_get_fancourier_collectpoints");
+    formData.append("action", "curiero_get_dpd_lockers");
     formData.append("nonce", curieroBlocks.nonce);
     formData.append("city", city);
     formData.append("state", state);
@@ -30,19 +30,18 @@ function FancourierCollectPoints({ orderId, cartData, shippingRates }) {
     });
 
     const data = await response.json();
-
-    console.log(data);
+    console.log("lockers ", data.data);
 
     const lockersData = [];
     data.data.lockers.forEach((locker) => {
       lockersData.push({
         value: locker.id,
-        label: `${locker.name} - ${locker.address}, ${locker.locality}, ${locker.county}`,
+        label: `${locker.name} - ${locker.address}, ${locker.city}`,
         id: locker.id,
         name: locker.name,
         address: locker.address,
-        locality: locker.locality,
-        county: locker.county,
+        city: locker.city,
+        // county: locker.County,
       });
     });
 
@@ -72,7 +71,7 @@ function FancourierCollectPoints({ orderId, cartData, shippingRates }) {
     await dispatchCart.applyExtensionCartUpdate({
       namespace: "CurieRO-blocks",
       data: {
-        action: "fancourier-set-selected-collectpoint",
+        action: "dpd-set-selected-locker",
         order_id: orderId,
         locker: lockerData,
       },
@@ -81,13 +80,17 @@ function FancourierCollectPoints({ orderId, cartData, shippingRates }) {
   };
 
   return (
-    <div>
+    <div
+      className={` ${
+        lockersAreLoading ? "wc-block-components-loading-mask" : ""
+      }`}
+    >
       <div className="wc-block-components-checkout-step__heading">
         <h2
           className="wc-block-components-title wc-block-components-checkout-step__title"
           aria-hidden="true"
         >
-          {curieroBlocks.i18n.selectLockerTitle.fancourierCollect} *
+          {curieroBlocks.i18n.selectLockerTitle.dpd} *
         </h2>
       </div>
       <Select
@@ -107,7 +110,7 @@ function FancourierCollectPoints({ orderId, cartData, shippingRates }) {
             locker.value.toString() ===
             cartData?.extensions?.[
               "CurieRO-blocks"
-            ]?.fancourierSelectedCollectpoint?.id.toString()
+            ]?.dpdSelectedLocker?.id.toString()
         )}
         onChange={handleLockerChange}
         options={lockers}
@@ -120,4 +123,4 @@ function FancourierCollectPoints({ orderId, cartData, shippingRates }) {
   );
 }
 
-export default FancourierCollectPoints;
+export default DpdLockers;

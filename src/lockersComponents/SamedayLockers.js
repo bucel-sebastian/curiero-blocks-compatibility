@@ -180,3 +180,64 @@ function SamedayLockers({ orderId, cartData, shippingRates }) {
 }
 
 export default SamedayLockers;
+
+const lockers = {
+  id: 3680,
+  fixedLocationId: "3680",
+  name: "Auchan - Constanta Sud (acum sunt 6 celule libere)",
+  fixedLocationTypeId: 1,
+  serviceId: 3,
+  courierId: 12,
+  localityId: 4946,
+  localityName: "Constanta",
+  countyCode: "CT",
+  countyName: "Constanta",
+  countryCode: "RO",
+  addressText: "Sos. Mangaliei nr. 195A",
+  postalCode: "900082",
+  lat: 44.1341165,
+  long: 28.6228314,
+  isActive: true,
+  email: "",
+  phone: null,
+  supportedPaymentType: "None",
+  allowsDropOff: false,
+  schedule: [
+    {
+      day: 1,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+    {
+      day: 2,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+    {
+      day: 3,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+    {
+      day: 4,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+    {
+      day: 5,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+    {
+      day: 6,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+    {
+      day: 7,
+      openingHour: "07:00:00",
+      closingHour: "22:00:00",
+    },
+  ],
+  restrictions: null,
+};

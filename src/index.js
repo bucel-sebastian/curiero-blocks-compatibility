@@ -1,10 +1,13 @@
 import { registerPlugin } from "@wordpress/plugins";
 import CurieROShippingLockers from "./CurieROShippingLockers";
+import { addFilter, addAction } from "@wordpress/hooks";
+import { registerBlockType } from "@wordpress/blocks";
 
 import { registerCheckoutFilters } from "@wordpress/blocks-checkout";
 
 import "./index.css";
 import ExternalDOMManipulation from "./ExternalDOMManipulation";
+import PfpjBlock from "./PfpjBlock";
 
 const render = () => {
   const { ExperimentalOrderShippingPackages } =
@@ -33,11 +36,6 @@ const render = () => {
     </>
   );
 };
-
-registerPlugin("curiero-blocks", {
-  render,
-  scope: "woocommerce-checkout",
-});
 
 // registerCheckoutFilters('curiero-blocks', {
 //   placeOrderButtonLabel: () => {
@@ -78,3 +76,30 @@ registerPlugin("curiero-blocks", {
 //       </select>
 //   );
 // };
+
+// TRIGERS
+addAction(
+  "experimental__woocommerce_blocks-checkout-set-billing-address",
+  "curiero/test",
+  async () => {
+    console.log("triggered");
+    var event = new Event("update_checkout");
+    document.body.dispatchEvent(event);
+
+    // console.log(await applyCheckoutFilter());
+  }
+);
+
+registerBlockType("curiero/pfpj-block", {
+  title: "PF/PJ Billing Fields",
+  description: "A custom block for adding PF/PJ related billing fields.",
+  category: "woocommerce", // WooCommerce block category
+  icon: "admin-users", // You can use an existing WordPress icon here
+  edit: PfpjBlock, // The component we created
+  save: () => null, // This is a dynamic block, so no need to save anything
+});
+
+registerPlugin("curiero-blocks", {
+  render,
+  scope: "woocommerce-checkout",
+});

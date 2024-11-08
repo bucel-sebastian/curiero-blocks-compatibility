@@ -1,17 +1,72 @@
-import { useEffect, useRef, useState, createRoot } from "@wordpress/element";
+import {
+  useEffect,
+  useRef,
+  useState,
+  createRoot,
+  useCallback,
+} from "@wordpress/element";
 import { useSelect } from "@wordpress/data";
 import { useDispatch } from "@wordpress/data";
 import ShippingCitySelect from "./city-select-components/ShippingCitySelect";
 import BillingCitySelect from "./city-select-components/BillingCitySelect";
 
+import { addFilter, addAction } from "@wordpress/hooks";
+import { registerPlugin } from "@wordpress/plugins";
+import { useStoreEvents } from "./hooks/useStoreEvents";
+import { useCheckoutAddress } from "./hooks/useCheckoutAddress";
+
 function ExternalDOMManipulation() {
   const dispatchCart = useDispatch("wc/store/cart");
+  const dispatchCheckout = useDispatch("wc/store/checkout");
+  const dispatchValidation = useDispatch("wc/store/validation");
+
+  const { dispatchCheckoutEvent } = useStoreEvents();
+
+  console.log("dispatch ", dispatchCheckoutEvent());
+
+  const dispatchNotices = useDispatch("wc/store/store-notices");
   const storeCartData = useSelect((select) => {
     const store = select("wc/store/cart");
     const cartData = store.getCartData();
 
     return cartData;
   });
+
+  const {
+    defaultAddressFields,
+    billingAddress,
+    setShippingAddress,
+    setBillingAddress,
+    useBillingAsShipping,
+  } = useCheckoutAddress();
+
+  const onChangeAddress = useCallback(
+    (values) => {
+      setBillingAddress(values);
+      if (useBillingAsShipping) {
+        setShippingAddress(values);
+        dispatchCheckoutEvent("set-shipping-address");
+      }
+      dispatchCheckoutEvent("set-billing-address");
+    },
+    [
+      dispatchCheckoutEvent,
+      setBillingAddress,
+      setShippingAddress,
+      useBillingAsShipping,
+    ]
+  );
+
+  // console.log("valid", dispatchCheckout);
+  // console.log("notices", dispatchNotices);
+  useEffect(() => {
+    document
+      .getElementById("billing-CurieRO-pfpj")
+      ?.addEventListener("change", async (event) => {
+        console.log("is changing");
+        onChangeAddress;
+      });
+  }, [document.getElementById("billing-CurieRO-pfpj")]);
 
   const renderShippingCitySelector = () => {
     if (!document.querySelector("#shipping-city")) {
